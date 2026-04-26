@@ -31,11 +31,9 @@ public static class ObsidianSettings
             try
             {
                 using var env = new AndroidJavaClass("android.os.Environment");
-                using var docDir = env.CallStatic<AndroidJavaObject>(
-                    "getExternalStoragePublicDirectory",
-                    env.GetStatic<AndroidJavaObject>("DIRECTORY_DOCUMENTS").Call<string>("getAbsolutePath"));
-                var docs = env.CallStatic<AndroidJavaObject>("getExternalStoragePublicDirectory",
-                    "Documents");
+                var dirDocuments = env.GetStatic<string>("DIRECTORY_DOCUMENTS");
+                using var docs = env.CallStatic<AndroidJavaObject>(
+                    "getExternalStoragePublicDirectory", dirDocuments);
                 var path = docs.Call<string>("getAbsolutePath");
                 return path + "/ObsidianVault/AR Lecture Notes";
             }

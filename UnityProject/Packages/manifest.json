@@ -4,7 +4,7 @@
     "com.unity.xr.interaction.toolkit": "3.0.7",
     "com.unity.xr.management": "4.5.0",
     "com.unity.inputsystem": "1.8.2",
-    "com.unity.textmeshpro": "3.0.9",
+    "com.unity.textmeshpro": "5.0.0",
     "com.xreal.xr": "file:../../SDKs/com.xreal.xr.tar.gz",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.imageconversion": "1.0.0"

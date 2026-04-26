@@ -36,11 +36,18 @@ public class MainThreadDispatcher : MonoBehaviour
 
     private void Update()
     {
+        List<Action> toInvoke = null;
         lock (_lock)
         {
-            while (_queue.Count > 0)
-                _queue.Dequeue()?.Invoke();
+            if (_queue.Count > 0)
+            {
+                toInvoke = new List<Action>(_queue);
+                _queue.Clear();
+            }
         }
+        if (toInvoke != null)
+            foreach (var action in toInvoke)
+                action?.Invoke();
     }
 
     public void Enqueue(Action action)

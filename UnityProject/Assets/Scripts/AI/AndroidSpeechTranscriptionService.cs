@@ -96,11 +96,19 @@ public class AndroidSpeechTranscriptionService : AndroidJavaProxy, ITranscriptio
     {
         while (_running)
         {
+            List<(string text, float confidence, bool isFinal)> batch = null;
             lock (_lock)
             {
-                while (_pending.Count > 0)
+                if (_pending.Count > 0)
                 {
-                    var (text, confidence, _) = _pending.Dequeue();
+                    batch = new List<(string, float, bool)>(_pending);
+                    _pending.Clear();
+                }
+            }
+            if (batch != null)
+            {
+                foreach (var (text, confidence, _) in batch)
+                {
                     var segment = new TranscriptSegment
                     {
                         Id = Guid.NewGuid().ToString(),
