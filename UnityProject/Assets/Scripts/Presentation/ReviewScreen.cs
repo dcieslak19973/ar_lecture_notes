@@ -94,12 +94,19 @@ public class ReviewScreen : ScreenBase
         try
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            bool granted = await AndroidPermissionHelper.RequestPermissionAsync(
-                "android.permission.WRITE_EXTERNAL_STORAGE");
-            if (!granted)
+            if (AndroidPermissionHelper.RequiresExternalStoragePermission())
             {
-                Toast.Show("Storage permission denied — cannot write to Obsidian vault.");
-                return;
+                bool granted = await AndroidPermissionHelper.RequestPermissionAsync(
+                    "android.permission.WRITE_EXTERNAL_STORAGE");
+                if (!granted)
+                {
+                    Toast.Show("Storage permission denied — cannot write to Obsidian vault.");
+                    return;
+                }
+            }
+            else
+            {
+                Debug.Log("[Obsidian] Skipping legacy WRITE_EXTERNAL_STORAGE permission request on Android 10+.");
             }
 #endif
             var path = await _export.ExportToObsidianVaultAsync(AppNavigator.CurrentSessionId);

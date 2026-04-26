@@ -3,6 +3,8 @@ package com.arlecture.speech;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -20,6 +22,10 @@ public class SpeechRecognizerBridge {
     private SpeechRecognizer recognizer;
     private final ISpeechCallback callback;
     private volatile boolean listening = false;
+    private static final long RESTART_DELAY_MS = 1000;
+    private static final int MAX_RESTART_ATTEMPTS = 5;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private int consecutiveRestartAttempts = 0;
 
     public SpeechRecognizerBridge(ISpeechCallback callback) {
         this.callback = callback;
@@ -41,6 +47,12 @@ public class SpeechRecognizerBridge {
         });
     }
 
+    private void scheduleRestart() {
+        if (!listening || consecutiveRestartAttempts >= MAX_RESTART_ATTEMPTS) return;
+        consecutiveRestartAttempts++;
+        mainHandler.postDelayed(this::createAndStart, RESTART_DELAY_MS);
+    }
+
     private void createAndStart() {
         if (!listening) return;
 
@@ -59,11 +71,11 @@ public class SpeechRecognizerBridge {
             @Override
             public void onError(int error) {
                 callback.onError(error);
-                // Restart on no-match or timeout to keep listening continuously
+                // Restart on no-match or timeout to keep listening continuously, with backoff.
                 if (listening && (error == SpeechRecognizer.ERROR_NO_MATCH
                         || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
                         || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY)) {
-                    createAndStart();
+                    scheduleRestart();
                 }
             }
 
@@ -77,8 +89,11 @@ public class SpeechRecognizerBridge {
                     float confidence = (scores != null && scores.length > 0) ? scores[0] : 1.0f;
                     callback.onFinalResult(matches.get(0), confidence);
                 }
-                // Restart to keep recording continuously
-                if (listening) createAndStart();
+                // Reset backoff once a valid result is received.
+                if (listening) {
+                    consecutiveRestartAttempts = 0;
+                    createAndStart();
+                }
             }
 
             @Override

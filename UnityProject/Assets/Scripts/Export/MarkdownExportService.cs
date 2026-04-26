@@ -34,11 +34,13 @@ public class MarkdownExportService : IExportService
 
         // Obsidian YAML frontmatter
         sb.AppendLine("---");
-        sb.AppendLine($"title: \"{session.Title}\"");
+        sb.AppendLine($"title: {EscapeYamlString(session.Title)}");
         sb.AppendLine($"date: {session.StartTime:yyyy-MM-dd}");
-        sb.AppendLine($"course: \"{courseName}\"");
+        sb.AppendLine($"course: {EscapeYamlString(courseName)}");
         sb.AppendLine($"duration_min: {(session.EndTime - session.StartTime).TotalMinutes:F0}");
-        sb.AppendLine($"tags: [lecture, {SanitizeTag(courseName)}]");
+        sb.AppendLine("tags:");
+        sb.AppendLine("  - lecture");
+        sb.AppendLine($"  - {EscapeYamlString(courseName)}");
         sb.AppendLine("---");
         sb.AppendLine();
 
@@ -132,4 +134,15 @@ public class MarkdownExportService : IExportService
 
     private static string SanitizeTag(string name) =>
         name.ToLowerInvariant().Replace(" ", "-");
+
+    private static string EscapeYamlString(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "\"\"";
+        var escaped = value
+            .Replace("\\", "\\\\")
+            .Replace("\"", "\\\"")
+            .Replace("\r\n", "\\n")
+            .Replace("\n", "\\n");
+        return $"\"{escaped}\"";
+    }
 }

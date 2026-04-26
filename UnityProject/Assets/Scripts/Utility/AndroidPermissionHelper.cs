@@ -30,4 +30,15 @@ public static class AndroidPermissionHelper
         return Task.FromResult(true);
 #endif
     }
+
+    public static bool RequiresExternalStoragePermission()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        using var version = new AndroidJavaClass("android.os.Build$VERSION");
+        var sdkInt = version.GetStatic<int>("SDK_INT");
+        return sdkInt < 29;
+#else
+        return false;
+#endif
+    }
 }
