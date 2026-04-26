@@ -1,0 +1,2 @@
+SDKs/*.tar.gz filter=lfs diff=lfs merge=lfs -text
+SDKs/*.tgz filter=lfs diff=lfs merge=lfs -text
