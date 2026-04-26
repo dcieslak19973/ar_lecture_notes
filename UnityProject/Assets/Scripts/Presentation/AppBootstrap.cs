@@ -26,7 +26,10 @@ public class AppBootstrap : MonoBehaviour
 #else
         ITranscriptionService transcription = new StubTranscriptionService();
 #endif
-        var summary = new StubSummaryService(storage);
+        var apiKey = PlayerPrefs.GetString("OpenAIApiKey", "");
+        ISummaryService summary = !string.IsNullOrWhiteSpace(apiKey)
+            ? (ISummaryService)new OpenAISummaryService(storage)
+            : new StubSummaryService(storage);
         ServiceLocator.Register<ITranscriptionService>(transcription);
         ServiceLocator.Register<ISummaryService>(summary);
 
