@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -44,6 +45,8 @@ public class LectureCaptureScreen : ScreenBase
 
     protected override async Task OnShowAsync()
     {
+        _transcriptBuffer.Clear();
+        _transcriptFeedText.text = "";
         _activeSession = await _sessions.StartSessionAsync(
             AppNavigator.CurrentCourseId,
             title: "");
@@ -67,6 +70,8 @@ public class LectureCaptureScreen : ScreenBase
     }
 
     private bool _transcribing = false;
+    private readonly StringBuilder _transcriptBuffer = new();
+    private const int MaxTranscriptChars = 5000;
     private async Task ToggleTranscriptionAsync()
     {
         if (_transcribing)
@@ -85,7 +90,14 @@ public class LectureCaptureScreen : ScreenBase
 
     private void OnTranscriptSegment(TranscriptSegment segment)
     {
-        _transcriptFeedText.text = segment.Text;
+        if (_transcriptBuffer.Length > 0)
+            _transcriptBuffer.Append('\n');
+        _transcriptBuffer.Append(segment.Text);
+
+        if (_transcriptBuffer.Length > MaxTranscriptChars)
+            _transcriptBuffer.Remove(0, _transcriptBuffer.Length - MaxTranscriptChars);
+
+        _transcriptFeedText.text = _transcriptBuffer.ToString();
         RunAsync(() => _sessions.AddNoteItemAsync(
             _activeSession.Id, segment.Text, NoteItemType.Transcript), "SaveTranscript");
     }

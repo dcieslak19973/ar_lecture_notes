@@ -26,7 +26,7 @@ public class AppBootstrap : MonoBehaviour
 #else
         ITranscriptionService transcription = new StubTranscriptionService();
 #endif
-        var summary = new StubSummaryService(storage);
+        var summary = new OpenAISummaryService(storage);
         ServiceLocator.Register<ITranscriptionService>(transcription);
         ServiceLocator.Register<ISummaryService>(summary);
 
