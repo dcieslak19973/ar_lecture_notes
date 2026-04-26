@@ -1,4 +1,4 @@
-using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -45,7 +45,8 @@ public class LectureCaptureScreen : ScreenBase
 
     protected override async Task OnShowAsync()
     {
-        _transcriptBuffer.Clear();
+        _transcriptQueue.Clear();
+        _transcriptTotalChars = 0;
         _transcriptFeedText.text = "";
         _activeSession = await _sessions.StartSessionAsync(
             AppNavigator.CurrentCourseId,
@@ -70,7 +71,8 @@ public class LectureCaptureScreen : ScreenBase
     }
 
     private bool _transcribing = false;
-    private readonly StringBuilder _transcriptBuffer = new();
+    private readonly Queue<string> _transcriptQueue = new Queue<string>();
+    private int _transcriptTotalChars = 0;
     private const int MaxTranscriptChars = 5000;
     private async Task ToggleTranscriptionAsync()
     {
@@ -90,14 +92,19 @@ public class LectureCaptureScreen : ScreenBase
 
     private void OnTranscriptSegment(TranscriptSegment segment)
     {
-        if (_transcriptBuffer.Length > 0)
-            _transcriptBuffer.Append('\n');
-        _transcriptBuffer.Append(segment.Text);
+        var addSeparator = _transcriptQueue.Count > 0;
+        _transcriptQueue.Enqueue(segment.Text);
+        _transcriptTotalChars += segment.Text.Length + (addSeparator ? 1 : 0);
 
-        if (_transcriptBuffer.Length > MaxTranscriptChars)
-            _transcriptBuffer.Remove(0, _transcriptBuffer.Length - MaxTranscriptChars);
+        // Dequeue oldest segments until we're within the character cap,
+        // keeping at least one segment so the display is never blank.
+        while (_transcriptTotalChars > MaxTranscriptChars && _transcriptQueue.Count > 1)
+        {
+            var removed = _transcriptQueue.Dequeue();
+            _transcriptTotalChars -= removed.Length + 1; // +1 for the separator that followed it
+        }
 
-        _transcriptFeedText.text = _transcriptBuffer.ToString();
+        _transcriptFeedText.text = string.Join("\n", _transcriptQueue);
         RunAsync(() => _sessions.AddNoteItemAsync(
             _activeSession.Id, segment.Text, NoteItemType.Transcript), "SaveTranscript");
     }

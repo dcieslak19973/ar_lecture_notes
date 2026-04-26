@@ -82,9 +82,49 @@ public class OpenAISummaryService : ISummaryService
         await SendAsync(req);
 
         if (req.result != UnityWebRequest.Result.Success)
-            throw new Exception($"HTTP {req.responseCode}: {req.error}");
+        {
+            var responseBody = req.downloadHandler != null ? req.downloadHandler.text : null;
+            var errorDetail = ExtractOpenAIErrorDetail(responseBody);
+            var message = $"HTTP {req.responseCode}: {req.error}";
+
+            if (!string.IsNullOrWhiteSpace(errorDetail))
+                message += $" Response: {errorDetail}";
+
+            throw new Exception(message);
+        }
 
         return ParseResponse(req.downloadHandler.text);
+    }
+
+    private static string ExtractOpenAIErrorDetail(string responseBody)
+    {
+        if (string.IsNullOrWhiteSpace(responseBody))
+            return null;
+
+        try
+        {
+            var errorResponse = JsonUtility.FromJson<OpenAIErrorResponse>(responseBody);
+            if (!string.IsNullOrWhiteSpace(errorResponse?.error?.message))
+                return errorResponse.error.message;
+        }
+        catch
+        {
+            // Ignore parsing issues and fall back to the raw response body.
+        }
+
+        return responseBody;
+    }
+
+    [Serializable]
+    private class OpenAIErrorResponse
+    {
+        public OpenAIErrorPayload error;
+    }
+
+    [Serializable]
+    private class OpenAIErrorPayload
+    {
+        public string message;
     }
 
     private static string BuildPrompt(List<NoteItem> notes, List<TranscriptSegment> transcript)
@@ -126,7 +166,7 @@ public class OpenAISummaryService : ISummaryService
             .Replace("\r", "\\r")
             .Replace("\t", "\\t");
 
-        return $"{{\"model\":\"{Model}\",\"messages\":[{{\"role\":\"user\",\"content\":\"{escaped}\"}}],\"temperature\":0.3}}";
+        return $"{{\"model\":\"{Model}\",\"messages\":[{{\"role\":\"user\",\"content\":\"{escaped}\"}}],\"response_format\":{{\"type\":\"json_object\"}},\"temperature\":0.3}}";
     }
 
     private static GptSummaryData ParseResponse(string responseJson)
@@ -185,9 +225,31 @@ public class OpenAISummaryService : ISummaryService
                     case '"': sb.Append('"'); break;
                     case '\\': sb.Append('\\'); break;
                     case '/': sb.Append('/'); break;
+                    case 'b': sb.Append('\b'); break;
+                    case 'f': sb.Append('\f'); break;
                     case 'n': sb.Append('\n'); break;
                     case 'r': sb.Append('\r'); break;
                     case 't': sb.Append('\t'); break;
+                    case 'u':
+                        if (i + 4 < json.Length)
+                        {
+                            var hex = json.Substring(i + 1, 4);
+                            try
+                            {
+                                var codePoint = Convert.ToInt32(hex, 16);
+                                sb.Append((char)codePoint);
+                                i += 4;
+                                break;
+                            }
+                            catch
+                            {
+                                // Preserve malformed escape text rather than silently
+                                // corrupting it into a different value.
+                            }
+                        }
+                        sb.Append('\\');
+                        sb.Append('u');
+                        break;
                     default: sb.Append(json[i]); break;
                 }
             }
