@@ -20,6 +20,7 @@ public class CourseListScreen : ScreenBase
     [SerializeField] private TMP_InputField _scheduleInput;
     [SerializeField] private Button _confirmAddButton;
     [SerializeField] private Button _cancelAddButton;
+    [SerializeField] private Button _settingsButton;
 
     private ICourseService _courses;
 
@@ -29,6 +30,7 @@ public class CourseListScreen : ScreenBase
         _addCourseButton.onClick.AddListener(() => _addCoursePanel.SetActive(true));
         _cancelAddButton.onClick.AddListener(() => _addCoursePanel.SetActive(false));
         _confirmAddButton.onClick.AddListener(() => RunAsync(CreateCourseAsync, "CreateCourse"));
+        _settingsButton.onClick.AddListener(AppNavigator.GoToSettings);
         _addCoursePanel.SetActive(false);
     }
 

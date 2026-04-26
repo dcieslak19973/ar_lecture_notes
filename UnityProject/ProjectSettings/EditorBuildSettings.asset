@@ -14,5 +14,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Review.unity
     guid: f285aebc8da43e748960f6c0946ab4d9
+  - enabled: 1
+    path: Assets/Scenes/AppSettings.unity
+    guid: e1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6
   m_configObjects:
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 13c32cbbc7e1b89448520541ab5fb8fb, type: 2}
